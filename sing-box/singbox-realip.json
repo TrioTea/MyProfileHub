@@ -39,10 +39,6 @@
         "server": "default-dns"
       },
       {
-        "query_type": "HTTPS",
-        "server": "block-dns"
-      },
-      {
         "clash_mode": "direct",
         "server": "default-dns"
       },
@@ -442,10 +438,6 @@
           }
         ],
         "outbound": "dns-out"
-      },
-      {
-        "protocol": "quic",
-        "outbound": "block-out"
       },
       {
         "clash_mode": "direct",
