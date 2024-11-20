@@ -1,0 +1,374 @@
+port: 7890
+socks-port: 7891
+mixed-port: 1080
+redir-port: 9797
+tproxy-port: 9898
+external-controller: 127.0.0.1:9090
+external-ui: /data/adb/box/clash/dashboard
+
+ipv6: false
+allow-lan: true
+tcp-concurrent: true
+unified-delay: true
+keep-alive-interval: 1800  # 减少移动端设备耗电
+
+mode: rule
+log-level: info
+global-client-fingerprint: chrome
+geodata-loader: standard
+find-process-mode: strict
+bind-address: '*'
+
+# 配置组-高级
+dns:
+  enable: true
+  prefer-h3: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  ipv6-timeout: 300
+  cache-algorithm: arc
+  use-hosts: true
+
+  enhanced-mode: redir-host
+
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  fallback: # 国外 DNS 服务器
+    - tcp://1.1.1.1
+    - tls://1.1.1.1:853
+    - https://1.1.1.1/dns-query
+
+  nameserver-policy:
+    '+.pub.3gppnetwork.org':
+      - 61.139.2.69
+      - 218.6.200.139
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+    domain:
+      - '+.ai.com'
+      - '+.algolia.net'
+      - '+.anthropic.com'
+      - '+.argotunnel.com'
+      - '+.arkoselabs.com'
+      - '+.auth0.com'
+      - '+.azure.com'
+      - '+.azureedge.net'
+      - '+.bing.com'
+      - '+.bingapis.com'
+      - '+.bugsnag.com'
+      - '+.chatgpt.com'
+      - '+.claude.ai'
+      - '+.cloudflare.net'
+      - '+.cloudflareinsights.com'
+      - '+.cohere.ai'
+      - '+.docker.com'
+      - '+.docker.io'
+      - '+.facebook.com'
+      - '+.github.com'
+      - '+.githubusercontent.com'
+      - '+.google'
+      - '+.google.com'
+      - '+.google.dev'
+      - '+.googleapis.cn'
+      - '+.googlevideo.com'
+      - '+.identrust.com'
+      - '+.instagram.com'
+      - '+.intercom.io'
+      - '+.live.com'
+      - '+.livekit.cloud'
+      - '+.meta.ai'
+      - '+.microsoft.com'
+      - '+.microsoftapp.net'
+      - '+.minecraft.net'
+      - '+.msn.com'
+      - '+.openai.com'
+      - '+.poe.com'
+      - '+.segment.com'
+      - '+.segment.io'
+      - '+.sentry.io'
+      - '+.synn.cc'
+      - '+.stripe.com'
+      - '+.t.me'
+      - '+.tailscale.com'
+      - '+.tailscale.io'
+      - '+.twitter.com'
+      - '+.usefathom.com'
+      - '+.v2ex.com'
+      - '+.windows.net'
+      - '+.wootric.com'
+      - '+.x.com'
+      - '+.youtube.com'
+
+# 模式配置
+tun: # tun模式
+  enable: false
+  device: mihomo
+  stack: system # gvisor / lwip / system
+  dns-hijack:
+    - any:53  # 需要劫持的 DNS
+    - tcp://any:53
+  auto-route: true # 配置路由表
+  auto-detect-interface: true  # 自动识别出口网卡
+  strict-route: false # 将所有连接路由到 tun 来防止泄漏，但你的设备将无法其他设备被访问 热点将无法共享网络
+
+sniffer:
+  enable: true
+  force-dns-mapping: false
+  parse-pure-ip: true
+  override-destination: false
+
+  # TLS 和 QUIC 默认如果不配置 ports 默认嗅探 443
+  sniff:
+    TLS:
+      ports: [ 443, 8443 ]
+    QUIC:
+      ports: [ 443 ]
+    HTTP:
+      ports: [ 80, 8080-8880 ]
+      override-destination: true # 可覆盖 sniffer.override-destination
+
+  force-domain:
+    - +.v2ex.com
+
+  # # 白名单,跳过嗅探结果
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
+    - "+.pub.3gppnetwork.org"
+
+profile:
+  store-selected: true
+  # 储存 API 对策略组的选择，以供下次启动时使用
+  store-fake-ip: true
+  # 储存 fake-ip 映射表，域名再次发生连接时，使用原有映射地址
+
+# 锚点 - 节点订阅的参数 [每24小时更新一次订阅节点，每 60 秒一次健康检查]
+NodeParam: &NodeParam { type: http, interval: 86400, health-check: { enable: true, url: 'https://cp.cloudflare.com', interval: 18000 } }
+
+# 锚点 - 节点订阅
+proxy-providers:
+  proxy:
+    url: ""
+    <<: *NodeParam
+    path: './proxy_providers/proxy.yaml'
+
+# 锚点 - 节点筛选组
+HK_Filter: &HK_Filter '^(?=.*((?i)🇭🇰|香港|(\b(HK|Hong)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+JP_Filter: &JP_Filter '^(?=.*((?i)🇯🇵|日本|川日|东京|大阪|泉日|埼玉|(\b(JP|Japan)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+KR_Filter: &KR_Filter '^(?=.*((?i)🇰🇷|韩国|韓|首尔|(\b(KR|Korea)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+SG_Filter: &SG_Filter '^(?=.*((?i)🇸🇬|新加坡|狮|(\b(SG|Singapore)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+US_Filter: &US_Filter '^(?=.*((?i)🇺🇸|美国|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|(\b(US|United States)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+UK_Filter: &UK_Filter '^(?=.*((?i)🇬🇧|英国|伦敦|(\b(UK|United Kingdom)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+FR_Filter: &FR_Filter '^(?=.*((?i)🇫🇷|法国|(\b(FR|France)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+DE_Filter: &DE_Filter '^(?=.*((?i)🇩🇪|德国|(\b(DE|Germany)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+TW_Filter: &TW_Filter '^(?=.*((?i)🇹🇼|台湾|(\b(TW|Taiwan)\b)))^(?!.*(网站|地址|剩余|过期|时间|有效|网址|禁止|邮箱|发布|客服|订阅|节点)).*$'
+Other_Filter: &Other_Filter '^(?!.*(🇭🇰|HK|hk|香港|港|HongKong|🇹🇼|TW|tw|台湾|臺灣|台|Taiwan|🇯🇵|JP|jp|日本|日|Japan|🇸🇬|SG|sg|新加坡|狮|Singapore|🇺🇸|US|us|美国|美|United States|🇩🇪|DE|de|德国|德|Germany|🇬🇧|GB|gb|英国|英|United Kingdom|🇰🇷|KR|kr|韩国|韩|South Korea|🇫🇷|FR|fr|法国|法|France)).*$'
+
+# 策略组参数锚点
+# 锚点 - 手动选择参数
+SELECT: &SELECT { type: select, url: 'https://connectivitycheck.platform.hicloud.com/generate_204', disable-udp: false, hidden: false, include-all: true }
+# 锚点 - URL测试参数
+URL-TEST: &URL-TEST { type: url-test, url: 'https://connectivitycheck.platform.hicloud.com/generate_204', interval: 300, tolerance: 100, timeout: 5, exclude: [ 'CN', 'HK', 'TW', 'MO', 'SG', 'JP', 'KR', 'US', 'GB', 'FR', 'DE' ] }
+# 锚点 - 故障回退参数
+FALLBACK: &FALLBACK { type: fallback, url: 'https://connectivitycheck.platform.hicloud.com/generate_204', interval: 200 ,include-all: true }
+
+# 策略组
+proxies:
+  - name: DNS劫持
+    type: dns
+
+# 策略组
+proxy-groups:
+  - { name: 🌏 全球加速, type: select, proxies: [ 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点, DIRECT ] }
+  - { name: 🍎 苹果服务, type: select, proxies: [ DIRECT, 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点 ] }
+  - { name: Ⓜ️ 微软服务, type: select, proxies: [ DIRECT, 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点 ] }
+  - { name: 🔍 谷歌服务, type: select, proxies: [ 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点 ] }
+  - { name: 🐦 推特服务, type: select, proxies: [ 🇺🇸 美国节点, 🇭🇰 香港节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点, DIRECT ] }
+  - { name: ✈️ 电报信息, type: select, proxies: [ 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点 ] }
+  - { name: 🤖 人工智能, type: select, proxies: [ 🇺🇸 美国节点, 🇭🇰 香港节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点, DIRECT ] }
+  - { name: 🍿 国际媒体, type: select, proxies: [ 🇺🇸 美国节点, 🇭🇰 香港节点, 🇯🇵 日本节点, 🇹🇼 台湾节点, 🇸🇬 新加坡节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点, DIRECT ] }
+  - { name: 🎮 游戏平台, type: select, proxies: [ 🇭🇰 香港节点, 🇺🇸 美国节点, 🇯🇵 日本节点, 🇰🇷 韩国节点, 🇸🇬 新加坡节点, 🇹🇼 台湾节点, 🇬🇧 英国节点, 🇫🇷 法国节点, 🇩🇪 德国节点, ♻️ 剩余节点, DIRECT ] }
+  - { name: 🏁 兜底分流, type: select, proxies: [ 🌏 全球加速 ,DIRECT ] }
+  - { name: 🚫 广告拦截, type: select, proxies: [ REJECT, DIRECT ] }
+
+  - { name: 🇭🇰 香港节点, <<: *FALLBACK, filter: *HK_Filter }
+  - { name: 🇹🇼 台湾节点, <<: *FALLBACK, filter: *TW_Filter }
+  - { name: 🇺🇸 美国节点, <<: *FALLBACK, filter: *US_Filter }
+  - { name: 🇯🇵 日本节点, <<: *FALLBACK, filter: *JP_Filter }
+  - { name: 🇰🇷 韩国节点, <<: *FALLBACK, filter: *KR_Filter }
+  - { name: 🇸🇬 新加坡节点, <<: *FALLBACK, filter: *SG_Filter }
+  - { name: 🇬🇧 英国节点, <<: *FALLBACK, filter: *UK_Filter }
+  - { name: 🇫🇷 法国节点, <<: *FALLBACK, filter: *FR_Filter }
+  - { name: 🇩🇪 德国节点, <<: *FALLBACK, filter: *DE_Filter }
+  - { name: ♻️ 剩余节点, <<: *FALLBACK, filter: *Other_Filter }
+
+rule-anchor:
+  # 锚点 - 规则参数 [每小时更新一次订阅规则，更新规则时使用直连策略]
+  RuleSet_File: &RuleSet_File { type: file, behavior: classical, format: yaml }
+  RuleSet_Classical: &RuleSet_Classical { type: http, behavior: classical, interval: 43200, format: yaml }
+  RuleSet_Domain: &RuleSet_Domain { type: http, behavior: domain, interval: 43200, format: yaml }
+  RuleSet_IPCidr: &RuleSet_IPCidr { type: http, behavior: ipcidr, interval: 43200, format: yaml }
+
+# 订阅规则
+rule-providers:
+  # 本地-强制直连规则
+  ForcedDirect:
+    <<: *RuleSet_File
+    path: ./rule_set/强制直连-域名.yaml
+  # 本地-强制代理规则
+  ForcedProxy:
+    <<: *RuleSet_File
+    path: ./rule_set/强制代理-域名.yaml
+
+  # 直连规则
+  Direct:
+    <<: *RuleSet_Domain
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Direct/Direct.yaml"
+    path: ./rule_set/Direct.yaml
+
+  # 局域网规则
+  Lan:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Lan/Lan.yaml"
+    path: ./rule_set/Lan.yaml
+
+  # 下载规则
+  Download:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Download/Download.yaml"
+    path: ./rule_set/Download.yaml
+
+  # 广告拦截规则
+  Ad:
+    <<: *RuleSet_Domain
+    url: "https://anti-ad.net/clash.yaml"
+    path: ./rule_set/anti-ad-clash.yaml
+
+  # OpenAI 规则
+  OpenAI:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml"
+    path: ./rule_set/OpenAI.yaml
+
+  # Claude AI 规则
+  Claude:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Claude/Claude.yaml"
+    path: ./rule_set/Claude.yaml
+
+  # 全球媒体规则
+  GlobalMedia:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GlobalMedia/GlobalMedia_Classical.yaml"
+    path: ./rule_set/GlobalMedia.yaml
+
+  # Apple 服务规则
+  Apple:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple_Classical.yaml"
+    path: ./rule_set/Apple.yaml
+
+  # 微软服务规则
+  Microsoft:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml"
+    path: ./rule_set/Microsoft.yaml
+  # GitHub 规则
+  Github:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
+    path: ./rule_set/Github.yaml
+
+  # Google 服务规则
+  GoogleFCM:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GoogleFCM/GoogleFCM.yaml"
+    path: ./rule_set/GoogleFCM.yaml
+
+  Google:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml"
+    path: ./rule_set/Google.yaml
+
+  # Telegram 规则
+  Telegram:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml"
+    path: ./rule_set/Telegram.yaml
+
+  # Twitter 规则
+  Twitter:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Twitter/Twitter.yaml"
+    path: ./rule_set/Twitter.yaml
+
+  # 游戏规则
+  Game:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Game/Game.yaml"
+    path: ./rule_set/Game.yaml
+
+  # 中国规则
+  ChinaMax:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ChinaMax/ChinaMax.yaml"
+    path: ./rule_set/ChinaMax.yaml
+
+  # 中国 IP 规则
+  ChinaMax_IP:
+    <<: *RuleSet_IPCidr
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ChinaMax/ChinaMax_IP.yaml"
+    path: ./rule_set/ChinaIP.yaml
+
+  # 代理规则（精简版）
+  ProxyLite:
+    <<: *RuleSet_Classical
+    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ProxyLite/ProxyLite.yaml"
+    path: ./rule_set/ProxyLite.yaml
+
+rules:
+  # 优先处理的规则
+  - DST-PORT,53,DNS劫持
+  - AND,((NETWORK,UDP),(OR,((DST-PORT,500),(DST-PORT,4500)))),DIRECT
+  # 强制规则（用户自定义）
+  - RULE-SET,ForcedDirect,DIRECT
+  - RULE-SET,ForcedProxy,🌏 全球加速
+  # 直连规则
+  - RULE-SET,Download,DIRECT
+  - RULE-SET,Direct,DIRECT
+  - RULE-SET,Lan,DIRECT
+  # 广告拦截规则
+  - RULE-SET,Ad,🚫 广告拦截
+  # 特定应用和服务
+  - RULE-SET,GoogleFCM,DIRECT
+  - RULE-SET,OpenAI,🤖 人工智能
+  - RULE-SET,Claude,🤖 人工智能
+  - RULE-SET,Twitter,🐦 推特服务
+  - RULE-SET,Telegram,✈️ 电报信息
+  - RULE-SET,Github,🌏 全球加速
+  - RULE-SET,Apple,🍎 苹果服务
+  - RULE-SET,Microsoft,Ⓜ️ 微软服务
+  - RULE-SET,Google,🔍 谷歌服务
+  # 媒体和游戏
+  - RULE-SET,GlobalMedia,🍿 国际媒体
+  - RULE-SET,Game,🎮 游戏平台
+  # 代理规则
+  - RULE-SET,ProxyLite,🌏 全球加速
+  # 中国大陆规则
+  - RULE-SET,ChinaMax,DIRECT
+  - RULE-SET,ChinaMax_IP,DIRECT,no-resolve
+  # 兜底规则
+  - MATCH,🏁 兜底分流
