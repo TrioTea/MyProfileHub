@@ -342,7 +342,6 @@ rule-providers:
 rules:
   # 优先处理的规则
   - DST-PORT,53,DNS劫持
-  - AND,((NETWORK,UDP),(OR,((DST-PORT,500),(DST-PORT,4500)))),DIRECT
   # 强制规则（用户自定义）
   - RULE-SET,ForcedDirect,DIRECT
   - RULE-SET,ForcedProxy,🌏 全球加速
