@@ -7,15 +7,17 @@
     "servers": [
       {
         "tag": "dns-default",
-        "address": "https://223.5.5.5/dns-query",
-        "address_strategy": "ipv4_only",
-        "strategy": "ipv4_only",
+        "address": "223.5.5.5",
         "detour": "direct-out"
       },
       {
         "tag": "dns-ips",
         "address": "61.139.2.69",
         "detour": "direct-out"
+      },
+      {
+        "tag": "dns-block",
+        "address": "rcode://name_error"
       },
       {
         "tag": "dns-google",
@@ -40,6 +42,10 @@
         "server": "dns-google"
       },
       {
+        "rule_set": "geosite-anti-ad",
+        "server": "dns-block"
+      },
+      {
         "domain_suffix": ".pub.3gppnetwork.org",
         "server": "dns-ips"
       },
@@ -53,20 +59,46 @@
       }
     ],
     "strategy": "ipv4_only",
-    "final": "dns-default"
+    "final": "dns-google"
   },
   "inbounds": [
     {
-      "type": "tproxy",
-      "tag": "tproxy-in",
-      "listen": "::",
-      "listen_port": 9898
+      "type": "tun",
+      "address": "172.19.0.1/30",
+      "mtu": 9000,
+      "auto_route": true,
+      "strict_route": true,
+      "sniff": true,
+      "endpoint_independent_nat": false,
+      "stack": "system",
+      "platform": {
+        "http_proxy": {
+          "enabled": true,
+          "server": "127.0.0.1",
+          "server_port": 2080
+        }
+      }
+    },
+    {
+      "type": "mixed",
+      "listen": "127.0.0.1",
+      "listen_port": 2080,
+      "sniff": true,
+      "users": []
     }
   ],
   "outbounds": [
     {
       "type": "direct",
       "tag": "direct-out"
+    },
+    {
+      "type": "block",
+      "tag": "block-out"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
     },
     {
       "tag": "🚀 节点选择",
@@ -83,24 +115,19 @@
       ]
     },
     {
-      "tag": "Global",
-      "type": "selector",
-      "outbounds": [
-        "🇭🇰 香港节点",
-        "🇹🇼 台湾节点",
-        "🇸🇬 新加坡节点",
-        "🇯🇵 日本节点",
-        "🇺🇸 美国节点",
-        "♻️ 剩余节点",
-        "direct-out"
-      ]
-    },
-    {
       "tag": "🇨🇳 直连服务",
       "type": "selector",
       "outbounds": [
         "direct-out",
         "🚀 节点选择"
+      ]
+    },
+    {
+      "tag": "🛑 广告拦截",
+      "type": "selector",
+      "outbounds": [
+        "block-out",
+        "direct-out"
       ]
     },
     {
@@ -264,7 +291,8 @@
         "🇹🇼 台湾节点",
         "🇸🇬 新加坡节点",
         "🇯🇵 日本节点",
-        "🇺🇸 美国节点"
+        "🇺🇸 美国节点",
+        "♻️ 剩余节点"
       ],
       "default": "🇯🇵 日本节点"
     },
@@ -272,6 +300,7 @@
       "tag": "🤖 人工智能",
       "type": "selector",
       "outbounds": [
+        "🇭🇰 香港节点",
         "🇹🇼 台湾节点",
         "🇸🇬 新加坡节点",
         "🇯🇵 日本节点",
@@ -392,12 +421,17 @@
   "route": {
     "rules": [
       {
-        "inbound": "tproxy-in",
-        "action": "sniff"
-      },
-      {
-        "protocol": "dns",
-        "action": "hijack-dns"
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "port": 53
+          },
+          {
+            "protocol": "dns"
+          }
+        ],
+        "outbound": "dns-out"
       },
       {
         "clash_mode": "direct",
@@ -405,12 +439,11 @@
       },
       {
         "clash_mode": "global",
-        "outbound": "Global"
+        "outbound": "🚀 节点选择"
       },
       {
         "rule_set": "geosite-anti-ad",
-        "clash_mode": "rule",
-        "action": "reject"
+        "outbound": "🛑 广告拦截"
       },
       {
         "domain": [
@@ -535,7 +568,7 @@
       },
       {
         "rule_set": "geosite-geolocation-!cn",
-        "outbound": "Global"
+        "outbound": "🚀 节点选择"
       },
       {
         "rule_set": [

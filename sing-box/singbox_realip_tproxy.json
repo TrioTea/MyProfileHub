@@ -59,10 +59,7 @@
       }
     ],
     "strategy": "ipv4_only",
-    "disable_cache": false,
-    "disable_expire": false,
-    "independent_cache": false,
-    "final": "dns-default"
+    "final": "dns-google"
   },
   "inbounds": [
     {
@@ -88,7 +85,7 @@
       "tag": "dns-out"
     },
     {
-      "tag": "Proxy",
+      "tag": "🚀 节点选择",
       "type": "selector",
       "outbounds": [
         "🎯 自动选择",
@@ -102,24 +99,11 @@
       ]
     },
     {
-      "tag": "Global",
-      "type": "selector",
-      "outbounds": [
-        "🇭🇰 香港节点",
-        "🇹🇼 台湾节点",
-        "🇸🇬 新加坡节点",
-        "🇯🇵 日本节点",
-        "🇺🇸 美国节点",
-        "♻️ 剩余节点",
-        "direct-out"
-      ]
-    },
-    {
       "tag": "🇨🇳 直连服务",
       "type": "selector",
       "outbounds": [
         "direct-out",
-        "Proxy"
+        "🚀 节点选择"
       ]
     },
     {
@@ -180,7 +164,7 @@
       "type": "selector",
       "outbounds": [
         "🇹🇼 台湾节点",
-        "Proxy"
+        "🚀 节点选择"
       ]
     },
     {
@@ -291,7 +275,8 @@
         "🇹🇼 台湾节点",
         "🇸🇬 新加坡节点",
         "🇯🇵 日本节点",
-        "🇺🇸 美国节点"
+        "🇺🇸 美国节点",
+        "♻️ 剩余节点"
       ],
       "default": "🇯🇵 日本节点"
     },
@@ -299,6 +284,7 @@
       "tag": "🤖 人工智能",
       "type": "selector",
       "outbounds": [
+        "🇭🇰 香港节点",
         "🇹🇼 台湾节点",
         "🇸🇬 新加坡节点",
         "🇯🇵 日本节点",
@@ -437,7 +423,7 @@
       },
       {
         "clash_mode": "global",
-        "outbound": "Global"
+        "outbound": "🚀 节点选择"
       },
       {
         "rule_set": "geosite-anti-ad",
@@ -543,11 +529,12 @@
         "outbound": "🍎 苹果服务"
       },
       {
-        "rule_set": [
-          "geosite-microsoft",
-          "geosite-github"
-        ],
+        "rule_set": "geosite-microsoft",
         "outbound": "🪟 微软服务"
+      },
+      {
+        "rule_set": "geosite-github",
+        "outbound": "🚀 节点选择"
       },
       {
         "rule_set": [
@@ -565,7 +552,7 @@
       },
       {
         "rule_set": "geosite-geolocation-!cn",
-        "outbound": "Global"
+        "outbound": "🚀 节点选择"
       },
       {
         "rule_set": [
@@ -802,7 +789,7 @@
       }
     ],
     "auto_detect_interface": true,
-    "final": "Proxy"
+    "final": "🚀 节点选择"
   },
   "experimental": {
     "cache_file": {
