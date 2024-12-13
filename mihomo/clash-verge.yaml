@@ -161,7 +161,7 @@ NodeParam: &NodeParam { type: http, interval: 86400, health-check: { enable: tru
 # 锚点 - 节点订阅
 proxy-providers:
   proxy:
-    url: ""
+    url: "https://let.bnsubservdom.com/api/v1/client/subscribe?token=7c422133487f53d57a5bd4c1ef146946"
     <<: *NodeParam
     path: './proxy_providers/proxy.yaml'
 
